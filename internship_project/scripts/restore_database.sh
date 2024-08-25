@@ -19,10 +19,24 @@ if [ ! -f "$DUMP_FILE" ]; then
     exit 1
 fi
 
+# Export the password so psql doesn't prompt for it
 export PGPASSWORD=$DB_PASSWORD
+
+# Drop existing tables to avoid conflicts
+docker exec -i $DB_CONTAINER_NAME psql -U $DB_USER -d $DB_NAME <<EOF
+DO \$\$ 
+DECLARE 
+    r RECORD;
+BEGIN 
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END \$\$;
+EOF
 
 docker exec -i $DB_CONTAINER_NAME psql -U $DB_USER -d $DB_NAME < $DUMP_FILE
 
+# Unset the password environment variable for security
 unset PGPASSWORD
 
 echo "Database restoration completed."
