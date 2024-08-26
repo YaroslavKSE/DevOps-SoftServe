@@ -141,9 +141,9 @@ export DB_PASSWORD="schedule_password"
     ```
 2. To restore the database, run the `restore_db.sh` script with the required arguments:
 
-```bash
-./scripts/restore_db.sh <db_container_name> <dump_file_path>
-```
+   ```bash
+   ./scripts/restore_db.sh <db_container_name> <dump_file_path>
+   ```
 
 - `<db_container_name>`: The name of the database container as defined in your `docker-compose.yml`.
 - `<dump_file_path>`: The path to the database dump file you wish to restore.
@@ -168,6 +168,126 @@ again. On this step the schedule should be visible.
   docker-compose logs -f
   ```
 
+## Configure Nginx as a reverse proxy (Optional)
+### Step 1: Install Nginx
+
+First, install Nginx on your Linux machine if it is not already installed.
+
+1. Update your package index:
+
+   ```bash
+   sudo apt-get update
+   ```
+
+2. Install Nginx:
+
+   ```bash
+   sudo apt-get install nginx
+   ```
+
+3. Once installed, start the Nginx service:
+
+   ```bash
+   sudo systemctl start nginx
+   ```
+
+4. Enable Nginx to start at boot:
+
+   ```bash
+   sudo systemctl enable nginx
+   ```
+
+5. Verify that Nginx is running:
+
+   ```bash
+   sudo systemctl status nginx
+   ```
+
+### Step 2: Configure Nginx as a Reverse Proxy
+
+Now that Nginx is installed, you can configure it to act as a reverse proxy for your web application.
+
+1. **Navigate to the Nginx configuration directory:**
+
+   ```bash
+   cd /etc/nginx/sites-available/
+   ```
+
+2. **Create a new configuration file for your application:**
+
+   Let's assume your web application is running on `http://localhost:3000`. Create a configuration file named `scheduleapp`:
+
+   ```bash
+   sudo nano /etc/nginx/sites-available/scheduleapp
+   ```
+
+3. **Add the following configuration to the file:**
+
+   ```nginx
+   server {
+       listen 80;
+       server_name localhost;
+   
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   
+       location /api {
+           proxy_pass http://localhost:8080;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+
+4. **Enable the configuration by creating a symbolic link to `sites-enabled`:**
+
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/scheduleapp /etc/nginx/sites-enabled/
+   ```
+
+5. **Disable the Default Configuration**
+   ```bash
+   sudo rm /etc/nginx/sites-enabled/default
+   ```
+
+6. **Test the Nginx configuration for syntax errors:**
+
+   ```bash
+   sudo nginx -t
+   ```
+
+   If the test is successful, you will see a message like:
+
+   ```
+   nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+   nginx: configuration file /etc/nginx/nginx.conf test is successful
+   ```
+
+7. **Reload Nginx to apply the changes:**
+
+   ```bash
+   sudo systemctl reload nginx
+   ```
+
+### Step 3: Test the Configuration
+
+1. Open a web browser on your local machine and go to `http://localhost` or write 
+   ```bash 
+   curl http://localhost
+   ```
+
+2. You should see your web application, which indicates that Nginx is successfully acting as a reverse proxy, forwarding requests to `http://localhost:3000`.
+
+
+
 ### Conclusion
 
-Following these steps, you should have your web application running on Ubuntu 24.04 with Docker and Docker Compose, and the database restored from a backup. If you encounter any issues, refer to the Docker and Docker Compose documentation or check the logs for troubleshooting.
+Following these steps, you should have your web application running on Ubuntu 24.04 with Docker and Docker Compose, 
+Nginx working as a reverse proxy, and the database restored from a backup. If you encounter any issues, refer to the Docker and Docker Compose documentation or check the logs for troubleshooting.
