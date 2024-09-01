@@ -1,6 +1,7 @@
 #!/bin/bash
 
-LOG_FILE="/var/log/sftp_file_creation.log"
+# Log file in user's home directory
+LOG_FILE="/home/$SFTP_USERNAME/sftp_file_creation.log"
 
 log_message() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
@@ -22,8 +23,8 @@ for SERVER_IP in "${SERVERS[@]}"; do
     FILENAME="${CURRENT_SERVER}_$(date '+%Y-%m-%d_%H:%M:%S').txt"
     echo "$CONTENT" > "/tmp/$FILENAME"
     
-    if sftp -o StrictHostKeyChecking=no -o BatchMode=yes vagrant@$SERVER_IP << EOF
-        put /tmp/$FILENAME
+    if sftp -o StrictHostKeyChecking=no -o BatchMode=yes $SFTP_USERNAME@$SERVER_IP << EOF
+        put /tmp/$FILENAME /home/$SFTP_USERNAME/sftp/
 EOF
     then
         log_message "Successfully created file $FILENAME on $SERVER_IP"
