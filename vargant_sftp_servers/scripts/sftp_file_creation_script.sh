@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Log file in user's home directory
+. /home/$SFTP_USERNAME/.sftp_env
+
 LOG_FILE="/home/$SFTP_USERNAME/sftp_file_creation.log"
 
 log_message() {
@@ -9,7 +10,7 @@ log_message() {
 
 CURRENT_SERVER=$(hostname)
 
-SERVERS=("192.168.33.11" "192.168.33.12" "192.168.33.13")
+SERVERS=("$SFTP_IP_1" "$SFTP_IP_2" "$SFTP_IP_3")
 
 for i in "${!SERVERS[@]}"; do
     if [[ ${SERVERS[i]} == $(hostname -I | awk '{print $2}') ]]; then

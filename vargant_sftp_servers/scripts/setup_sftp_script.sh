@@ -1,6 +1,12 @@
 #!/bin/bash
 
-cat /vagrant/sftp_file_creation_script.sh > /home/$SFTP_USERNAME/create_sftp_files.sh
+cat /vagrant/scripts/sftp_file_creation_script.sh > /home/$SFTP_USERNAME/create_sftp_files.sh
+
+sudo tee /home/$SFTP_USERNAME/.sftp_env << EOF
+SFTP_IP_1=$SFTP_IP_1
+SFTP_IP_2=$SFTP_IP_2
+SFTP_IP_3=$SFTP_IP_3
+EOF
 
 chmod +x /home/$SFTP_USERNAME/create_sftp_files.sh
 

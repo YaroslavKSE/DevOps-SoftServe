@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Array of all VM IPs
-vms=("192.168.33.11" "192.168.33.12" "192.168.33.13")
+vms=("$SFTP_IP_1" "$SFTP_IP_2" "$SFTP_IP_3")
 
 copy_ssh_key() {
     local host=$1
