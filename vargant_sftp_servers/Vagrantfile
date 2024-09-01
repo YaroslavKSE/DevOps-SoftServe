@@ -1,44 +1,24 @@
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
-require_relative 'env_loader'
-
 Vagrant.configure("2") do |config|
   (1..3).each do |i|
-    config.vm.define "sftp_server_#{i}" do |node|
-      node.vm.box = "ubuntu/focal64"
-      node.vm.hostname = "sftp-server-#{i}"
-      node.vm.network "private_network", type: "dhcp"
+    config.vm.define "sftp#{i}" do |node|
+      node.vm.box = "ubuntu/bionic64"
+      node.vm.hostname = "sftp#{i}"
+      node.vm.network "private_network", ip: "192.168.33.#{10+i}"
 
-      node.vm.provider "virtualbox" do |vb|
-        vb.memory = VM_MEMORY
-        vb.cpus = VM_CPUS.to_i
-      end
-
+      # Initial setup and SSH key generation
       node.vm.provision "shell", inline: <<-SHELL
         apt-get update
         apt-get install -y openssh-server
-
-        # Remove existing PasswordAuthentication and PubkeyAuthentication lines
-        sed -i '/^#*PasswordAuthentication/d' /etc/ssh/sshd_config
-        sed -i '/^#*PubkeyAuthentication/d' /etc/ssh/sshd_config
-
-        # Add new configuration lines
-        echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
-        echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
-        echo "PermitRootLogin no" >> /etc/ssh/sshd_config
-        echo "AllowUsers #{SFTP_USERNAME} vagrant" >> /etc/ssh/sshd_config
-
-        # Restart SSH service to apply changes
-        systemctl restart sshd
-
-        # Create user and set up SFTP directory
-        useradd -m -d /home/#{SFTP_USERNAME} -s /bin/bash #{SFTP_USERNAME}
-        echo "#{SFTP_USERNAME}:#{SFTP_PASSWORD}" | chpasswd
-        mkdir -p /home/#{SFTP_USERNAME}/upload
-        chown #{SFTP_USERNAME}:#{SFTP_USERNAME} /home/#{SFTP_USERNAME}/upload
-        chmod 755 /home/#{SFTP_USERNAME}
+        sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        systemctl restart ssh
       SHELL
+
+      node.vm.provision "shell", path: "generate_ssh_key.sh", privileged: false
+
+      # Run key exchange script after all VMs are up
+      if i == 3
+        node.vm.provision "shell", path: "exchange_ssh_keys.sh", privileged: false, run: "always"
+      end
     end
   end
 end
