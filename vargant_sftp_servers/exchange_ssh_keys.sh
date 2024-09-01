@@ -6,9 +6,13 @@ vms=("192.168.33.11" "192.168.33.12" "192.168.33.13")
 copy_ssh_key() {
     local host=$1
     ssh-keyscan -H $host >> ~/.ssh/known_hosts
-    #TODO sshpass -f password.txt ssh-copy-id user@yourserver
-    ssh-copy-id -i ~/.ssh/id_rsa.pub vagrant@$host
+    sshpass -p "vagrant" ssh-copy-id -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa.pub vagrant@$host
+    #ssh-copy-id -i ~/.ssh/id_rsa.pub vagrant@$host
 }
+
+# Ensure sshpass is installed
+sudo apt-get update
+sudo apt-get install -y sshpass
 
 for vm in "${vms[@]}"; do
     if [[ $vm != $(hostname -I | awk '{print $2}') ]]; then
