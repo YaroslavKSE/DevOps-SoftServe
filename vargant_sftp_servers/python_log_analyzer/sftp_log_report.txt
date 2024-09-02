@@ -1,12 +1,13 @@
 SFTP Log Analysis Report
 ========================
 
-IP Address: 192.168.33.15
-Records Created: 12
+Successfully Created Records:
+Records created on Server IP 192.168.33.15: 27
+Records created on Server IP 192.168.33.16: 26
+Records created on Server IP 192.168.33.14: 26
 
-IP Address: 192.168.33.16
-Records Created: 12
+Failed Reports:
+Failed to create reports on server IP 192.168.33.16: 1
 
-IP Address: 192.168.33.14
-Records Created: 12
-
+Detailed Failure Messages:
+Failed to create file sftp1_2024-09-02_08:50:46.txt on 192.168.33.16

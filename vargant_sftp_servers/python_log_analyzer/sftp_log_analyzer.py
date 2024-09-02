@@ -43,48 +43,74 @@ def download_log(ssh_client, remote_path, local_path):
 
 def parse_log(log_path):
     ip_count = defaultdict(int)
-    pattern = r"Successfully created file .+ on (\d+\.\d+\.\d+\.\d+)"
-    
+    fail_count = defaultdict(int)
+    fail_messages = []
+    success_pattern = r"Successfully created file .+ on (\d+\.\d+\.\d+\.\d+)"
+    fail_pattern = r"Failed to create file (.+) on (\d+\.\d+\.\d+\.\d+)"
+
     with open(log_path, 'r') as file:
         for line in file:
-            match = re.search(pattern, line)
-            if match:
-                ip = match.group(1)
+            success_match = re.search(success_pattern, line)
+            fail_match = re.search(fail_pattern, line)
+            
+            if success_match:
+                ip = success_match.group(1)
                 ip_count[ip] += 1
-    
-    return ip_count
+            elif fail_match:
+                filename = fail_match.group(1)
+                server_ip = fail_match.group(2)
+                fail_count[server_ip] += 1
+                fail_messages.append(f"Failed to create file {filename} on {server_ip}")
 
-def generate_report(ip_counts):
+    return ip_count, fail_count, fail_messages
+
+def generate_report(ip_counts, fail_counts, fail_messages):
     report = "SFTP Log Analysis Report\n"
     report += "========================\n\n"
     
+    report += "Successfully Created Records:\n"
     for ip, count in ip_counts.items():
-        report += f"IP Address: {ip}\n"
-        report += f"Records Created: {count}\n\n"
+        report += f"Records created on Server IP {ip}: {count}\n"
+    report += "\n"
     
+    report += "Failed Reports:\n"
+    if sum(fail_counts.values()) == 0:
+        report += "Failed reports: 0\n"
+    else:
+        for ip, count in fail_counts.items():
+            report += f"Failed to create reports on server IP {ip}: {count}\n"
+        report += "\nDetailed Failure Messages:\n"
+        for message in fail_messages:
+            report += f"{message}\n"
+
     return report
 
 def main(vms, username, key_filename, remote_log_path, output_file):
     all_ip_counts = defaultdict(int)
-    
+    all_fail_counts = defaultdict(int)
+    all_fail_messages = []
+
     for vm in vms:
         ssh_client = connect_ssh(vm, username, key_filename)
         if ssh_client:
             local_log_path = f"{vm}_sftp_file_creation.log"
             download_log(ssh_client, remote_log_path, local_log_path)
             ssh_client.close()
-            
-            ip_counts = parse_log(local_log_path)
+
+            ip_counts, fail_counts, fail_messages = parse_log(local_log_path)
             for ip, count in ip_counts.items():
                 all_ip_counts[ip] += count
-    
-    report = generate_report(all_ip_counts)
+            for ip, count in fail_counts.items():
+                all_fail_counts[ip] += count
+            all_fail_messages.extend(fail_messages)
+
+    report = generate_report(all_ip_counts, all_fail_counts, all_fail_messages)
     
     with open(output_file, 'w') as f:
         f.write(report)
-    
     logging.info(f"Report generated and saved to {output_file}")
     print(report)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SFTP Log Analyzer")
