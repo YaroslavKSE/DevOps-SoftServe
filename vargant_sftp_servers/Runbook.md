@@ -55,9 +55,9 @@ vagrant provision --provision-with disable_password_auth
 
 ## Using the Log Analyzer
 
-### 1. Navigate to the Python Log Analyzer Directory
+### 1. Navigate to the Project Root Directory
 ```bash
-cd python_log_analyzer
+cd /path/to/your/project
 ```
 
 ### 2. Install Required Python Packages
@@ -65,11 +65,38 @@ cd python_log_analyzer
 pip install -r requirements.txt
 ```
 
-### 3. Run the Log Analyzer
+### 3. Download Logs and Generate Report
 Replace `<path_to_your_private_key>` with the actual path to your SSH private key.
 ```bash
-python sftp_log_analyzer.py --vms 192.168.33.14 192.168.33.15 192.168.33.16 --username sftpuser --key_filename "<path_to_your_private_key>" --remote_log_path /home/sftpuser/sftp_file_creation.log
+python download_and_generate_report.py --vms 192.168.33.14 192.168.33.15 192.168.33.16 --username sftpuser --key_filename "<path_to_your_private_key>" --remote_log_path /home/sftpuser/sftp_file_creation.log
 ```
+
+This command will:
+- Download log files from the specified VMs
+- Parse the logs
+- Generate a text report (default filename: `sftp_log_report.txt`)
+
+### 4. View the Generated Report
+You can open the generated report file (default: `sftp_log_report.txt`) to view the analysis results.
+
+### 5. Run the Flask Web Application
+To view the report in a web interface:
+
+```bash
+python run_webapp.py
+```
+
+This will start the Flask development server. By default, it runs on `http://127.0.0.1:5000/`.
+
+### 6. Access the Web Interface
+Open a web browser and navigate to `http://127.0.0.1:5000/` to view the SFTP Log Analysis Report in a user-friendly interface.
+
+Note: The Flask application reads the log files from the `logs` directory in your project root. Make sure you've run the `download_and_generate_report.py` script before starting the web application to ensure the most up-to-date data is displayed.
+
+### 7. Stopping the Web Application
+To stop the Flask application, press `CTRL+C` in the terminal where it's running.
+
+Remember to run the `download_and_generate_report.py` script periodically or set up a cron job to keep your log data up-to-date.
 
 ## Additional Notes
 - Ensure that your SSH private key has the correct permissions (typically 600 or 400).
