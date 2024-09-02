@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -9,15 +7,6 @@ services:
       - "8080:8080"
     env_file:
       - .env
-    environment:
-      - DATABASE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      - DATABASE_USER=${POSTGRES_USER}
-      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
-      - REDIS_PROTOCOL=${REDIS_PROTOCOL}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - MONGO_CURRENT_DATABASE=${MONGO_CURRENT_DATABASE}
-      - DEFAULT_SERVER_CLUSTER=${DEFAULT_SERVER_CLUSTER}
     depends_on:
       - postgres
       - redis
@@ -31,8 +20,6 @@ services:
       dockerfile: ../Dockerfile-Frontend
     ports:
       - "3000:3000"
-    env_file:
-      - .env
     environment:
       - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
     networks:
@@ -44,8 +31,6 @@ services:
       dockerfile: Dockerfile-PostgreSQL
     ports:
       - "5432:5432"
-    env_file:
-      - .env
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -67,8 +52,6 @@ services:
       dockerfile: Dockerfile-Redis
     ports:
       - "6379:6379"
-    env_file:
-      - .env
     networks:
       - app-network
 
@@ -78,10 +61,6 @@ services:
       dockerfile: Dockerfile-MongoDB
     ports:
       - "27017:27017"
-    env_file:
-      - .env
-    environment:
-      - MONGO_INITDB_DATABASE=${MONGO_CURRENT_DATABASE}
     volumes:
       - mongo_data:/data/db
     networks:
