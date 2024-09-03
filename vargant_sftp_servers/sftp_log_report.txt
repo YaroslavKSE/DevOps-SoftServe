@@ -1,0 +1,27 @@
+SFTP Log Analysis Report
+========================
+
+Successfully Created Records by Server:
+Server IP 192.168.33.15:
+  - From sftp1: 51
+  - From sftp3: 50
+  Total: 101
+
+Server IP 192.168.33.16:
+  - From sftp1: 50
+  - From sftp2: 50
+  Total: 100
+
+Server IP 192.168.33.14:
+  - From sftp2: 50
+  - From sftp3: 50
+  Total: 100
+
+Failed Reports:
+Failed to create reports on server IP 192.168.33.16: 2
+Failed to create reports on server IP 192.168.33.15: 1
+
+Detailed Failure Messages:
+Failed to create file sftp1_2024-09-02_08:50:46.txt on 192.168.33.16
+Failed to create file sftp1_2024-09-02_17:00:01.txt on 192.168.33.15
+Failed to create file sftp1_2024-09-02_17:00:04.txt on 192.168.33.16
