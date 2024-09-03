@@ -174,3 +174,4 @@ cython_debug/
 
 # Public and private keys
 *.pub
+*_rsa
