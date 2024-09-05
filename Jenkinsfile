@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Define credentials - adjust these IDs to match what you've set up in Jenkins
+        // Environment variables remain the same
         POSTGRES_DB = credentials('POSTGRES_DB')
         POSTGRES_USER = credentials('POSTGRES_USER')
         POSTGRES_PASSWORD = credentials('POSTGRES_PASSWORD')
@@ -33,24 +33,28 @@ pipeline {
 
         stage('Prepare Environment') {
             steps {
-                sh '''
-                    echo "POSTGRES_DB=${POSTGRES_DB}" > .env
-                    echo "POSTGRES_USER=${POSTGRES_USER}" >> .env
-                    echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> .env
-                    echo "DATABASE_URL=${DATABASE_URL}" >> .env
-                    echo "REDIS_PROTOCOL=${REDIS_PROTOCOL}" >> .env
-                    echo "REDIS_HOST=${REDIS_HOST}" >> .env
-                    echo "REDIS_PORT=${REDIS_PORT}" >> .env
-                    echo "REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}" >> .env
-                    echo "MONGO_CURRENT_DATABASE=${MONGO_CURRENT_DATABASE}" >> .env
-                    echo "DEFAULT_SERVER_CLUSTER=${DEFAULT_SERVER_CLUSTER}" >> .env
-                '''
+                dir('internship_project') {
+                    sh '''
+                        echo "POSTGRES_DB=${POSTGRES_DB}" > .env
+                        echo "POSTGRES_USER=${POSTGRES_USER}" >> .env
+                        echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> .env
+                        echo "DATABASE_URL=${DATABASE_URL}" >> .env
+                        echo "REDIS_PROTOCOL=${REDIS_PROTOCOL}" >> .env
+                        echo "REDIS_HOST=${REDIS_HOST}" >> .env
+                        echo "REDIS_PORT=${REDIS_PORT}" >> .env
+                        echo "REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}" >> .env
+                        echo "MONGO_CURRENT_DATABASE=${MONGO_CURRENT_DATABASE}" >> .env
+                        echo "DEFAULT_SERVER_CLUSTER=${DEFAULT_SERVER_CLUSTER}" >> .env
+                    '''
+                }
             }
         }
 
         stage('Build and Start Application') {
             steps {
-                sh 'docker compose up -d --build'
+                dir('internship_project') {
+                    sh 'docker compose up -d --build'
+                }
             }
         }
 
@@ -68,8 +72,10 @@ pipeline {
 
     post {
         always {
-            sh 'docker compose down'
-            sh 'rm -f .env'  // Clean up the .env file
+            dir('internship_project') {
+                sh 'docker compose down'
+                sh 'rm -f .env'  // Clean up the .env file
+            }
         }
     }
 }
