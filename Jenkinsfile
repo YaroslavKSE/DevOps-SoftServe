@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent ec2-linux-4gb
 
     environment {
         // Environment variables remain the same
