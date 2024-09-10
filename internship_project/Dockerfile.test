@@ -1,0 +1,17 @@
+FROM gradle:7.3.3-jdk11
+
+# Install PostgreSQL client
+RUN apt-get update && apt-get install -y postgresql-client
+
+WORKDIR /app
+
+# Copy your source code and build files
+COPY . .
+
+# Make sure wait-for-it.sh is executable
+RUN chmod +x wait-for-db.sh
+
+# The default command will wait for the database and then run the tests
+ENTRYPOINT ["./wait-for-db.sh", "db"]
+
+CMD ["gradle", "test", "--tests com.softserve.controller.DepartmentControllerTest.getAll"]
