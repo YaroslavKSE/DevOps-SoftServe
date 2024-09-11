@@ -1,0 +1,15 @@
+FROM python:3.12-alpine
+
+WORKDIR /app
+
+COPY requirements.downloader.txt .
+RUN pip install --no-cache-dir -r requirements.downloader.txt
+
+COPY ./log_downloader ./log_downloader
+COPY ./shared ./shared
+
+# Copy the SSH key and set correct permissions
+COPY docker_id_rsa /app/ssh_key
+RUN chmod 600 /app/ssh_key
+
+CMD ["python", "-m", "log_downloader.download_logs"]
