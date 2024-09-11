@@ -61,13 +61,19 @@ pipeline {
             }
         }
 
-        stage('Verify Application') {
+        stage('Tests/Verify Application') {
             steps {
                 sh '''
-                    # Wait for the application to start
-                    sleep 30
-                    # Check if the application is accessible
-                    curl -f http://localhost:3000 || exit 1
+                for i in $(seq 1 12); do
+                    if curl -sSf http://localhost:3000 >/dev/null 2>&1; then
+                        echo "Application is up!"
+                        exit 0
+                    fi
+                    echo "Attempt $i failed. Waiting..."
+                    sleep 10
+                done
+                echo "Application failed to start"
+                exit 1
                 '''
             }
         }
