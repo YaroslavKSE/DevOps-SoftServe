@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'ec2-linux-4gb' }
+    agent { label 'ec2-dynamic-agent' }
 
     environment {
         POSTGRES_DB = credentials('POSTGRES_DB')
