@@ -105,7 +105,7 @@ Ensure that this file is saved in the root directory of your project.
 With the `.env` file in place, you can now start the application using Docker Compose:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 This command will pull the necessary Docker images (if not already available) and start the containers as defined in your `docker-compose.yml` file. The `-d` flag runs the containers in the background.
@@ -159,13 +159,13 @@ again. On this step the schedule should be visible.
 - **To stop the application**, use:
 
   ```bash
-  docker-compose down
+  docker compose down
   ```
 
 - **To view logs**, use:
 
   ```bash
-  docker-compose logs -f
+  docker compose logs -f
   ```
 
 ## Configure Nginx as a reverse proxy (Optional)
