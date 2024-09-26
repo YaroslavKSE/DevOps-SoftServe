@@ -16,6 +16,9 @@ pipeline {
         AWS_REGION = credentials('AWS_REGION')
         BACKEND_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/schedule-web-app-backend"
         FRONTEND_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/schedule-web-app-frontend"
+        BACKEND_VERSION_FILE = 'internship_project/src/version.txt'
+        FRONTEND_VERSION_FILE = 'internship_project/frontend/version.txt'
+        GIT_CREDS = credentials('GIT_CREDENTIALS')
     }
 
     stages {
@@ -61,7 +64,7 @@ pipeline {
             }
         }
 
-        stage('Tests/Verify Application') {
+        stage('Verify[Test] Application') {
             steps {
                 sh '''
                 for i in $(seq 1 12); do
@@ -78,28 +81,83 @@ pipeline {
             }
         }
 
-        stage('Push Images to ECR') {
+
+        stage('Load Pipeline Functions') {
             steps {
                 script {
-                    def tag = sh(script: "date +'%d.%m.%Y'", returnStdout: true).trim()
-                    
+                    pipelineFunctions = load 'jenkins/pipeline_functions.groovy'
+                }
+            }
+        }
+
+        stage('Determine Changes and Versions') {
+            steps {
+                script {
+                    env.BACKEND_CHANGED = sh(script: "git diff --name-only HEAD^ HEAD | grep '^internship_project/src'", returnStatus: true) == 0
+                    env.FRONTEND_CHANGED = sh(script: "git diff --name-only HEAD^ HEAD | grep '^internship_project/frontend'", returnStatus: true) == 0
+
+                    def versionChange = pipelineFunctions.determineVersionChange()
+
+                    env.NEW_BACKEND_VERSION = env.BACKEND_CHANGED ? pipelineFunctions.updateComponentVersion('Backend', env.BACKEND_VERSION_FILE, env.BACKEND_CHANGED, versionChange) : readFile(env.BACKEND_VERSION_FILE).trim()
+                    env.NEW_FRONTEND_VERSION = env.FRONTEND_CHANGED ? pipelineFunctions.updateComponentVersion('Frontend', env.FRONTEND_VERSION_FILE, env.FRONTEND_CHANGED, versionChange) : readFile(env.FRONTEND_VERSION_FILE).trim()
+
+                    def commitMessage = []
+                    if (env.BACKEND_CHANGED) {
+                        commitMessage.add("Backend ${env.NEW_BACKEND_VERSION}")
+                    }
+                    if (env.FRONTEND_CHANGED) {
+                        commitMessage.add("Frontend ${env.NEW_FRONTEND_VERSION}")
+                    }
+
+                    if (commitMessage) {
+                        withCredentials([
+                            string(credentialsId: 'github-versioning-token', variable: 'GITHUB_TOKEN'),
+                            string(credentialsId: 'jenkins-email', variable: 'JENKINS_EMAIL')
+                        ]) {
+                            sh """
+                                git config user.email "\${JENKINS_EMAIL}"
+                                git config user.name "Jenkins"
+                                git add ${env.BACKEND_CHANGED ? env.BACKEND_VERSION_FILE : ''} ${env.FRONTEND_CHANGED ? env.FRONTEND_VERSION_FILE : ''}
+                                git commit -m "Update versions: ${commitMessage.join(', ')}"
+                                git push https://x-access-token:${GITHUB_TOKEN}@github.com/your-repo-url.git HEAD:${env.GIT_BRANCH}
+                            """
+                        }
+                        echo "Pushed version updates: ${commitMessage.join(', ')}"
+                    } else {
+                        echo "No changes detected. Skipping version update commit."
+                    }
+                }
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                script {
                     sh '''
                         # Login to AWS ECR
                         aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                     '''
                     
                     dir('internship_project') {
-                        sh """
-                            backend_image_id=\$(docker compose images backend -q)
-                            docker tag \${backend_image_id} ${BACKEND_REPO}:${tag}
-                            docker push ${BACKEND_REPO}:${tag}
-                        """
+                        if (env.BACKEND_CHANGED == 'true') {
+                            sh """
+                                backend_image_id=\$(docker compose images backend -q)
+                                docker tag \${backend_image_id} ${BACKEND_REPO}:${env.NEW_VERSION}
+                                docker push ${BACKEND_REPO}:${env.NEW_VERSION}
+                            """
+                        } else {
+                            echo "No changes detected in backend. Skipping backend build and push."
+                        }
                         
-                        sh """
-                            frontend_image_id=\$(docker compose images frontend -q)
-                            docker tag \${frontend_image_id} ${FRONTEND_REPO}:${tag}
-                            docker push ${FRONTEND_REPO}:${tag}
-                        """
+                        if (env.FRONTEND_CHANGED == 'true') {
+                            sh """
+                                frontend_image_id=\$(docker compose images frontend -q)
+                                docker tag \${frontend_image_id} ${FRONTEND_REPO}:${env.NEW_VERSION}
+                                docker push ${FRONTEND_REPO}:${env.NEW_VERSION}
+                            """
+                        } else {
+                            echo "No changes detected in frontend. Skipping frontend build and push."
+                        }
                     }
                 }
             }
@@ -110,7 +168,7 @@ pipeline {
         always {
             dir('internship_project') {
                 sh 'docker compose down'
-                sh 'rm -f .env'  // Clean up the .env file
+                sh 'rm -f .env'
             }
         }
     }
