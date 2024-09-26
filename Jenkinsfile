@@ -18,7 +18,6 @@ pipeline {
         FRONTEND_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/schedule-web-app-frontend"
         BACKEND_VERSION_FILE = 'internship_project/src/version.txt'
         FRONTEND_VERSION_FILE = 'internship_project/frontend/version.txt'
-        GIT_CREDS = credentials('GIT_CREDENTIALS')
     }
 
     stages {
