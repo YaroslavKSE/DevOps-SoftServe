@@ -141,8 +141,8 @@ pipeline {
                         if (env.BACKEND_CHANGED == 'true') {
                             sh """
                                 backend_image_id=\$(docker compose images backend -q)
-                                docker tag \${backend_image_id} ${BACKEND_REPO}:${env.NEW_VERSION}
-                                docker push ${BACKEND_REPO}:${env.NEW_VERSION}
+                                docker tag \${backend_image_id} ${BACKEND_REPO}:${env.NEW_BACKEND_VERSION}
+                                docker push ${BACKEND_REPO}:${env.NEW_BACKEND_VERSION}
                             """
                         } else {
                             echo "No changes detected in backend. Skipping backend build and push."
@@ -151,8 +151,8 @@ pipeline {
                         if (env.FRONTEND_CHANGED == 'true') {
                             sh """
                                 frontend_image_id=\$(docker compose images frontend -q)
-                                docker tag \${frontend_image_id} ${FRONTEND_REPO}:${env.NEW_VERSION}
-                                docker push ${FRONTEND_REPO}:${env.NEW_VERSION}
+                                docker tag \${frontend_image_id} ${FRONTEND_REPO}:${env.NEW_FRONTEND_VERSION}
+                                docker push ${FRONTEND_REPO}:${env.NEW_FRONTEND_VERSION}
                             """
                         } else {
                             echo "No changes detected in frontend. Skipping frontend build and push."
