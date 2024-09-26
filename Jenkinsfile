@@ -108,7 +108,7 @@ pipeline {
                         commitMessage.add("Frontend ${env.NEW_FRONTEND_VERSION}")
                     }
 
-                    if (commitMessage.isEmpty()) {
+                    if (!commitMessage.isEmpty()) {
                         withCredentials([
                             string(credentialsId: 'github-versioning-token', variable: 'GITHUB_TOKEN'),
                             string(credentialsId: 'jenkins-email', variable: 'JENKINS_EMAIL')
