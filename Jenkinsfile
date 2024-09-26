@@ -18,7 +18,6 @@ pipeline {
         FRONTEND_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/schedule-web-app-frontend"
         BACKEND_VERSION_FILE = 'internship_project/src/version.txt'
         FRONTEND_VERSION_FILE = 'internship_project/frontend/version.txt'
-        GIT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
     }
 
     stages {
@@ -114,12 +113,15 @@ pipeline {
                             string(credentialsId: 'github-versioning-token', variable: 'GITHUB_TOKEN'),
                             string(credentialsId: 'jenkins-email', variable: 'JENKINS_EMAIL')
                         ]) {
+                            def branchName = env.GIT_BRANCH.replaceFirst('^origin/', '')
+                            echo "Pushing to branch: ${branchName}"
                             sh """
                                 git config user.email "\${JENKINS_EMAIL}"
                                 git config user.name "Jenkins"
                                 git add ${env.BACKEND_CHANGED ? env.BACKEND_VERSION_FILE : ''} ${env.FRONTEND_CHANGED ? env.FRONTEND_VERSION_FILE : ''}
                                 git commit -m "Update versions: ${commitMessage.join(', ')}"
-                                git push https://x-access-token:${GITHUB_TOKEN}@github.com/YaroslavKSE/DevOps-SoftServe.git HEAD:${env.GIT_BRANCH}
+                                echo "Pushing to branch: ${env.GIT_BRANCH}"
+                                git push https://x-access-token:${GITHUB_TOKEN}@github.com/YaroslavKSE/DevOps-SoftServe.git HEAD:${branchName} || (echo "Push failed" && exit 1)
                             """
                         }
                         echo "Pushed version updates: ${commitMessage.join(', ')}"
