@@ -108,7 +108,7 @@ pipeline {
                         commitMessage.add("Frontend ${env.NEW_FRONTEND_VERSION}")
                     }
 
-                    if (commitMessage) {
+                    if (commitMessage.isEmpty()) {
                         withCredentials([
                             string(credentialsId: 'github-versioning-token', variable: 'GITHUB_TOKEN'),
                             string(credentialsId: 'jenkins-email', variable: 'JENKINS_EMAIL')
@@ -118,7 +118,7 @@ pipeline {
                                 git config user.name "Jenkins"
                                 git add ${env.BACKEND_CHANGED ? env.BACKEND_VERSION_FILE : ''} ${env.FRONTEND_CHANGED ? env.FRONTEND_VERSION_FILE : ''}
                                 git commit -m "Update versions: ${commitMessage.join(', ')}"
-                                git push https://x-access-token:${GITHUB_TOKEN}@github.com/your-repo-url.git HEAD:${env.GIT_BRANCH}
+                                git push https://x-access-token:${GITHUB_TOKEN}@github.com/YaroslavKSE/DevOps-SoftServe.git HEAD:${env.GIT_BRANCH}
                             """
                         }
                         echo "Pushed version updates: ${commitMessage.join(', ')}"
