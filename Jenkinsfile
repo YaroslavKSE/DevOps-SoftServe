@@ -92,8 +92,8 @@ pipeline {
         stage('Determine Changes and Versions') {
             steps {
                 script {
-                    env.BACKEND_CHANGED = sh(script: "git diff --name-only HEAD^ HEAD | grep '^internship_project/src'", returnStatus: true) == 0
-                    env.FRONTEND_CHANGED = sh(script: "git diff --name-only HEAD^ HEAD | grep '^internship_project/frontend'", returnStatus: true) == 0
+                    env.BACKEND_CHANGED = sh(script: "git diff --name-only HEAD^ HEAD | grep -q '^internship_project/src'", returnStatus: true) == 0
+                    env.FRONTEND_CHANGED = sh(script: "git diff --name-only HEAD^ HEAD | grep -q '^internship_project/frontend'", returnStatus: true) == 0
 
                     def versionChange = pipelineFunctions.determineVersionChange()
 
