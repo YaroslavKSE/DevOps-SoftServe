@@ -1,0 +1,98 @@
+pipeline {
+    agent { label 'ec2-dynamic-agent' }
+
+    parameters {
+        string(name: 'BACKEND_VERSION', defaultValue: '', description: 'Backend version to deploy')
+        string(name: 'FRONTEND_VERSION', defaultValue: '', description: 'Frontend version to deploy')
+    }
+
+    environment {
+        TF_VAR_aws_region = credentials('AWS_REGION')
+        TF_VAR_aws_account_id = credentials('AWS_ACCOUNT_ID')
+        TF_VAR_key_name = credentials('EC2_KEY_NAME')
+        TF_VAR_private_key = credentials('ec2-ssh-key')
+        TF_VAR_postgres_db = credentials('POSTGRES_DB')
+        TF_VAR_postgres_user = credentials('POSTGRES_USER')
+        TF_VAR_postgres_password = credentials('POSTGRES_PASSWORD')
+        TF_VAR_redis_port = credentials('REDIS_PORT')
+        TF_VAR_mongo_database = credentials('MONGO_CURRENT_DATABASE')
+        TF_VAR_redis_host = credentials('REDIS_HOST')
+        TF_VAR_redis_protocol = credentials('REDIS_PROTOCOL')
+        TF_VAR_default_server_cluster = credentials('DEFAULT_SERVER_CLUSTER')
+        TF_VAR_react_app_api_base_url = credentials('REACT_APP_API_BASE_URL')
+        BACKEND_REPO = "${TF_VAR_aws_account_id}.dkr.ecr.${TF_VAR_aws_region}.amazonaws.com/schedule-web-app-backend"
+        FRONTEND_REPO = "${TF_VAR_aws_account_id}.dkr.ecr.${TF_VAR_aws_region}.amazonaws.com/schedule-web-app-frontend"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('webapp-terraform') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                dir('webapp-terraform') {
+                    sh """
+                    terraform plan \
+                        -var "backend_image=${BACKEND_REPO}:${params.BACKEND_VERSION}" \
+                        -var "frontend_image=${FRONTEND_REPO}:${params.FRONTEND_VERSION}" \
+                        -out=tfplan
+                    """
+                }
+            }
+        }
+
+        stage('Approve Terraform Apply') {
+            steps {
+                input message: 'Apply Terraform?', ok: 'Apply'
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir('webapp-terraform') {
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                dir('webapp-terraform') {
+                    script {
+                        def instance_ip = sh(script: 'terraform output -raw instance_public_ip', returnStdout: true).trim()
+                        
+                        sh """
+                        for i in \$(seq 1 12); do
+                            if curl -sSf http://${instance_ip} >/dev/null 2>&1; then
+                                echo "Application is up!"
+                                exit 0
+                            fi
+                            echo "Attempt \$i failed. Waiting..."
+                            sleep 10
+                        done
+                        echo "Application failed to start"
+                        exit 1
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}

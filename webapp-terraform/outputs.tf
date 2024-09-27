@@ -1,7 +1,8 @@
-output "frontend_url" {
-  value = "http://localhost:3000"
+output "instance_public_ip" {
+  description = "Public IP address of the EC2 instance"
+  value       = aws_instance.app_server.public_ip
 }
 
-output "backend_url" {
-  value = "http://localhost:8080"
+output "application_url" {
+  value = "http://${aws_instance.app_server.public_ip}"
 }

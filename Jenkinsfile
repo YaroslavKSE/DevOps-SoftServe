@@ -166,6 +166,20 @@ pipeline {
         }
     }
 
+        stage('Trigger CD Pipeline') {
+            when {
+                expression { env.BACKEND_CHANGED == 'true' || env.FRONTEND_CHANGED == 'true' }
+            }
+            steps {
+                build job: 'CD-Pipeline', 
+                      parameters: [
+                          string(name: 'BACKEND_VERSION', value: env.NEW_BACKEND_VERSION),
+                          string(name: 'FRONTEND_VERSION', value: env.NEW_FRONTEND_VERSION)
+                      ],
+                      wait: false
+            }
+        }
+
     post {
         always {
             dir('internship_project') {
@@ -174,4 +188,5 @@ pipeline {
             }
         }
     }
+
 }

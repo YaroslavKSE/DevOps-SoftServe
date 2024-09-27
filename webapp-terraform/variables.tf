@@ -7,10 +7,9 @@ variable "redis_host" {}
 variable "redis_protocol" {}
 variable "default_server_cluster" {}
 variable "react_app_api_base_url" {}
-variable "backend_image" {
-  default = "730335443082.dkr.ecr.eu-north-1.amazonaws.com/schedule-web-app-backend:19.09.2024"
-}
-
-variable "frontend_image" {
-  default = "730335443082.dkr.ecr.eu-north-1.amazonaws.com/schedule-web-app-frontend:19.09.2024"
-}
+variable "backend_image" {}
+variable "frontend_image" {}
+variable "aws_region" {}
+variable "aws_account_id" {}
+variable "private_key" {}
+variable "key_name" {}
