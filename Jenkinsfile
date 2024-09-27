@@ -164,9 +164,7 @@ pipeline {
                 }
             }
         }
-    }
-
-        stage('Trigger CD Pipeline') {
+                stage('Trigger CD Pipeline') {
             when {
                 expression { env.BACKEND_CHANGED == 'true' || env.FRONTEND_CHANGED == 'true' }
             }
@@ -179,6 +177,7 @@ pipeline {
                       wait: false
             }
         }
+    }
 
     post {
         always {
