@@ -3,6 +3,7 @@ variable "postgres_user" {}
 variable "postgres_password" {}
 variable "redis_port" {}
 variable "mongo_database" {}
+variable "db_dump_path" {}
 variable "redis_host" {}
 variable "redis_protocol" {}
 variable "default_server_cluster" {}

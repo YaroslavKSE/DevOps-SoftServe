@@ -20,6 +20,7 @@ pipeline {
         TF_VAR_redis_protocol = credentials('REDIS_PROTOCOL')
         TF_VAR_default_server_cluster = credentials('DEFAULT_SERVER_CLUSTER')
         TF_VAR_react_app_api_base_url = credentials('REACT_APP_API_BASE_URL')
+        TF_VAR_db_dump_path = "scripts/database.dump"
         BACKEND_REPO = "${TF_VAR_aws_account_id}.dkr.ecr.${TF_VAR_aws_region}.amazonaws.com/schedule-web-app-backend"
         FRONTEND_REPO = "${TF_VAR_aws_account_id}.dkr.ecr.${TF_VAR_aws_region}.amazonaws.com/schedule-web-app-frontend"
     }

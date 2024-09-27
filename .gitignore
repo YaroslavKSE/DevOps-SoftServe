@@ -167,7 +167,7 @@ cython_debug/
 
 # Databases
 *.sql
-*.dump
+
 
 # Vagrant build files
 .vagrant
