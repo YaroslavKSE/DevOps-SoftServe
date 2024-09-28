@@ -1,13 +1,17 @@
 resource "null_resource" "database_restore" {
-  depends_on = [docker_container.postgres, docker_container.backend]
+  depends_on = [aws_instance.app_server]
 
-  provisioner "local-exec" {
-    command = "bash ${path.module}/scripts/restore_database.sh ${docker_container.postgres.name} ${var.db_dump_path}"
-    environment = {
-      DB_NAME = var.postgres_db
-      DB_USER = var.postgres_user
-      DB_PASSWORD = var.postgres_password
-    }
+  provisioner "remote-exec" {
+    inline = [
+      "bash /home/ec2-user/app/scripts/restore_database.sh postgres ${var.db_dump_path}"
+    ]
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ec2-user"
+    private_key = file(var.private_key)
+    host        = aws_instance.app_server.public_ip
   }
 }
 

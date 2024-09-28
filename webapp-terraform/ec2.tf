@@ -12,10 +12,7 @@ resource "aws_instance" "app_server" {
   user_data = templatefile("user_data.sh", {
     AWS_REGION = var.aws_region
     AWS_ACCOUNT_ID = var.aws_account_id
-  })
-
-  provisioner "file" {
-    content     = templatefile("docker-compose.yml.tpl", {
+    DOCKER_COMPOSE_CONTENT = templatefile("docker-compose.yml.tpl", {
       backend_image  = var.backend_image
       frontend_image = var.frontend_image
       postgres_db    = var.postgres_db
@@ -28,25 +25,6 @@ resource "aws_instance" "app_server" {
       react_app_api_base_url = var.react_app_api_base_url
       default_server_cluster = var.default_server_cluster
     })
-    destination = "/home/ec2-user/app/docker-compose.yml"
-  }
-
-  provisioner "file" {
-    source      = "nginx.conf"
-    destination = "/home/ec2-user/app/nginx.conf"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /home/ec2-user/app",
-      "docker-compose up -d"
-    ]
-  }
-
-  connection {
-    type        = "ssh"
-    user        = "ec2-user"
-    private_key = file(var.private_key)
-    host        = self.public_ip
-  }
+    NGINX_CONF_CONTENT = file("nginx.conf")
+  })
 }
