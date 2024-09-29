@@ -32,3 +32,7 @@ variable "ami_id" {
   description = "AMI ID for the EC2 instances"
   default     = "ami-04cdc91e49cb06165"
 }
+
+variable "artifacts_bucket_name" {
+  description = "S3 bucket for artifacts"
+}
