@@ -35,4 +35,5 @@ variable "ami_id" {
 
 variable "artifacts_bucket_name" {
   description = "S3 bucket for artifacts"
+  default     = "schedule-web-app-artifacts"
 }

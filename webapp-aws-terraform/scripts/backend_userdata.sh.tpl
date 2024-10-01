@@ -6,6 +6,18 @@ sudo apt update && sudo apt upgrade -y
 # Install Java 11
 sudo apt install -y openjdk-11-jdk
 
+# Install unzip
+sudo apt install unzip
+
+# Install aws cli
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# Install session manager:
+curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+sudo dpkg -i session-manager-plugin.deb
+
 # Install Tomcat 9.0.50
 wget https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.50/bin/apache-tomcat-9.0.50.tar.gz
 sudo mkdir /opt/tomcat
