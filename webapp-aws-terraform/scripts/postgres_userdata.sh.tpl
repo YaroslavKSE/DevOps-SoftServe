@@ -40,6 +40,8 @@ echo "host    all             all             ${allowed_cidr}        md5" | sudo
 sudo sed -i "s/local   all             postgres                                peer/local   all             postgres                                md5/g" /etc/postgresql/13/main/pg_hba.conf"
 sudo sed -i "s/local   all             all                                     peer/local   all             all                                     md5/g" /etc/postgresql/13/main/pg_hba.conf"
 
+sudo sed -i "s/local\s\+all\s\+all\s\+peer/local all all md5/" /etc/postgresql/13/main/pg_hba.conf
+
 # Restart PostgreSQL
 sudo systemctl restart postgresql
 
