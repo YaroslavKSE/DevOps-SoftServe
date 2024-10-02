@@ -37,9 +37,7 @@ export POSTGRES_DB=schedule_database
 export POSTGRES_USER=schedule_user
 export POSTGRES_PASSWORD=schedule_password
 export DATABASE_URL=jdbc:postgresql://${postgres_private_ip}:5432/schedule_database
-export REDIS_PROTOCOL=redis
-export REDIS_HOST=${redis_private_ip}
-export REDIS_PORT=6379
+export REDIS_ADDRESS=redis://${redis_private_ip}:6379
 export MONGO_CURRENT_DATABASE=schedules
 export DEFAULT_SERVER_CLUSTER=${mongo_private_ip}
 EOF
