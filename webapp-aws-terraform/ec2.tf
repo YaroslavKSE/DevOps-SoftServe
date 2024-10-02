@@ -53,7 +53,7 @@ resource "aws_instance" "redis" {
 # Frontend EC2 Instance
 resource "aws_instance" "frontend" {
   ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.default.id
-  instance_type               = "t3.medium"
+  instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public.id
   vpc_security_group_ids      = [aws_security_group.frontend_sg.id]
   key_name                    = var.key_pair_name
@@ -73,7 +73,7 @@ resource "aws_instance" "frontend" {
 # Backend EC2 Instance
 resource "aws_instance" "backend" {
   ami                    = var.ami_id != "" ? var.ami_id : data.aws_ami.default.id
-  instance_type          = "t3.medium"
+  instance_type          = var.instance_type
   subnet_id              = aws_subnet.private.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
   key_name               = var.key_pair_name
