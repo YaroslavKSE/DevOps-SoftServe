@@ -1,0 +1,101 @@
+---
+- name: Provision Backend Instance
+  hosts: backend
+  remote_user: ssm-user
+  become: yes
+  become_user: ubuntu
+  gather_facts: false
+
+  vars:
+    artifacts_bucket: "{{ lookup('env', 'ARTIFACTS_BUCKET') }}"
+    postgres_private_ip: "{{ hostvars['postgres'][0] }}"
+    redis_private_ip: "{{ hostvars['redis'][0] }}"
+    mongo_private_ip: "{{ hostvars['mongodb'][0] }}"
+
+  tasks:
+    - name: Update and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+        force_apt_get: yes
+
+    - name: Install Java 11
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+    - name: Install unzip
+      apt:
+        name: unzip
+        state: present
+
+    - name: Install AWS CLI
+      unarchive:
+        src: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: "/tmp/"
+        remote_src: yes
+      args:
+        creates: "/usr/local/bin/aws"
+      command: "/tmp/aws/install -i /usr/local/aws-cli -b /usr/local/bin"
+
+    - name: Install Session Manager Plugin
+      apt:
+        deb: "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb"
+        state: present
+
+    - name: Download Tomcat
+      get_url:
+        url: "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.50/bin/apache-tomcat-9.0.50.tar.gz"
+        dest: "/tmp/apache-tomcat-9.0.50.tar.gz"
+
+    - name: Extract Tomcat
+      unarchive:
+        src: "/tmp/apache-tomcat-9.0.50.tar.gz"
+        dest: "/opt/tomcat"
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+
+    - name: Remove default webapps
+      file:
+        path: "/opt/tomcat/webapps/*"
+        state: absent
+
+    - name: Set permissions on Tomcat
+      file:
+        path: "/opt/tomcat"
+        owner: ubuntu
+        group: ubuntu
+        recurse: yes
+
+    - name: Make Tomcat scripts executable
+      file:
+        path: "/opt/tomcat/bin/*.sh"
+        mode: '0755'
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Download WAR file from S3
+      aws_s3:
+        bucket: "{{ artifacts_bucket }}"
+        object: "app.war"
+        dest: "/opt/tomcat/webapps/ROOT.war"
+        mode: get
+        region: "{{ lookup('env', 'AWS_DEFAULT_REGION') }}"
+        overwrite: yes
+
+    - name: Create environment variables for Tomcat
+      copy:
+        dest: "/opt/tomcat/bin/setenv.sh"
+        content: |
+          export POSTGRES_DB=schedule_database
+          export POSTGRES_USER=schedule_user
+          export POSTGRES_PASSWORD=schedule_password
+          export DATABASE_URL=jdbc:postgresql://{{ postgres_private_ip }}:5432/schedule_database
+          export REDIS_ADDRESS=redis://{{ redis_private_ip }}:6379
+          export MONGO_CURRENT_DATABASE=schedules
+          export DEFAULT_SERVER_CLUSTER={{ mongo_private_ip }}
+
+    - name: Start Tomcat
+      shell: "/opt/tomcat/bin/startup.sh"
+      args:
+        executable: /bin/bash

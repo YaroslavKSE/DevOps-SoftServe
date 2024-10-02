@@ -1,0 +1,64 @@
+---
+- name: Provision Redis Instance
+  hosts: redis
+  remote_user: ssm-user
+  become: yes
+  become_user: ubuntu
+  gather_facts: false
+
+  tasks:
+    - name: Update and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install AWS CLI
+      unarchive:
+        src: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: "/tmp/"
+        remote_src: yes
+      args:
+        creates: "/usr/local/bin/aws"
+      register: aws_cli_install
+    - name: Run AWS CLI installer
+      command: "/tmp/aws/install -i /usr/local/aws-cli -b /usr/local/bin"
+      when: aws_cli_install is changed
+
+    - name: Install Session Manager Plugin
+      apt:
+        deb: "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb"
+        state: present
+
+    - name: Add Redis PPA Repository
+      apt_repository:
+        repo: ppa:redislabs/redis
+        state: present
+
+    - name: Install Redis Server
+      apt:
+        update_cache: yes
+        name: redis-server
+        state: present
+
+    - name: Start and enable Redis
+      service:
+        name: redis-server
+        state: started
+        enabled: yes
+
+    - name: Configure Redis to bind to all interfaces
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: "^bind .*"
+        line: "bind 0.0.0.0"
+
+    - name: Disable Redis protected mode
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: "^protected-mode .*"
+        line: "protected-mode no"
+
+    - name: Restart Redis
+      service:
+        name: redis-server
+        state: restarted

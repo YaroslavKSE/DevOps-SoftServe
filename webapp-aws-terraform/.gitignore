@@ -35,3 +35,6 @@ terraform.rc
 
 # Ignore .terraform.lock.hcl if you're not ready to commit it
 # .terraform.lock.hcl
+
+# Python venvs
+*_env/

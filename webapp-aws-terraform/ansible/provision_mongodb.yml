@@ -1,0 +1,127 @@
+---
+- name: Provision Postgres Instance
+  hosts: postgres
+  remote_user: ssm-user
+  become: true
+  become_user: ubuntu
+  gather_facts: false
+
+  vars:
+    artifacts_bucket: "{{ lookup('env', 'ARTIFACTS_BUCKET') }}"
+    allowed_cidr: "{{ lookup('env', 'VPC_CIDR_BLOCK') }}"
+    aws_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') }}"
+
+  tasks:
+    - name: Update and upgrade packages
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install unzip
+      ansible.builtin.apt:
+        name: unzip
+        state: present
+
+    - name: Install AWS CLI
+      ansible.builtin.unarchive:
+        src: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: "/tmp/"
+        remote_src: yes
+      args:
+        creates: "/usr/local/bin/aws"
+      register: aws_cli_install
+
+    - name: Run AWS CLI installer
+      ansible.builtin.command: "/tmp/aws/install -i /usr/local/aws-cli -b /usr/local/bin"
+      when: aws_cli_install is changed
+
+    - name: Install Session Manager Plugin
+      ansible.builtin.apt:
+        deb: "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb"
+        state: present
+
+    - name: Add PostgreSQL APT Key
+      ansible.builtin.apt_key:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        state: present
+
+    - name: Add PostgreSQL APT Repository
+      ansible.builtin.apt_repository:
+        repo: "deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main"
+        state: present
+
+    - name: Install PostgreSQL 13
+      ansible.builtin.apt:
+        name: postgresql-13
+        state: present
+
+    - name: Ensure PostgreSQL is started and enabled
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Create PostgreSQL database
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: schedule_database
+
+    - name: Create PostgreSQL user
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: schedule_user
+        password: "schedule_password"
+        priv: "ALL"
+        db: schedule_database
+
+    - name: Configure PostgreSQL to listen on all interfaces
+      ansible.builtin.lineinfile:
+        path: /etc/postgresql/13/main/postgresql.conf
+        regexp: "^#?listen_addresses"
+        line: "listen_addresses = '*'"
+
+    - name: Allow remote connections from allowed CIDR
+      ansible.builtin.lineinfile:
+        path: /etc/postgresql/13/main/pg_hba.conf
+        line: "host    all             all             {{ allowed_cidr }}        md5"
+        create: yes
+        insertafter: EOF
+
+    - name: Modify pg_hba.conf for md5 authentication
+      ansible.builtin.replace:
+        path: /etc/postgresql/13/main/pg_hba.conf
+        regexp: '^local\s+all\s+all\s+peer'
+        replace: "local   all             all                                     md5"
+
+    - name: Restart PostgreSQL
+      ansible.builtin.service:
+        name: postgresql
+        state: restarted
+
+    - name: Download database dump from S3
+      community.aws.aws_s3:
+        bucket: "{{ artifacts_bucket }}"
+        object: "database.dump"
+        dest: "/home/ubuntu/database.dump"
+        mode: get
+        region: "{{ aws_region }}"
+        overwrite: yes
+
+    - name: Download restore script from S3
+      community.aws.aws_s3:
+        bucket: "{{ artifacts_bucket }}"
+        object: "restore_database.sh"
+        dest: "/home/ubuntu/restore_database.sh"
+        mode: get
+        region: "{{ aws_region }}"
+        overwrite: yes
+
+    - name: Make restore script executable
+      ansible.builtin.file:
+        path: "/home/ubuntu/restore_database.sh"
+        mode: '0755'
+
+    - name: Run restore script
+      ansible.builtin.shell: "/home/ubuntu/restore_database.sh local '' /home/ubuntu/database.dump"
+      args:
+        executable: /bin/bash

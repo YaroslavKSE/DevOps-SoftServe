@@ -1,0 +1,111 @@
+---
+- name: Provision Frontend Instance
+  hosts: frontend
+  remote_user: ssm-user
+  become: yes
+  become_user: ubuntu
+  gather_facts: false
+
+  vars:
+    artifacts_bucket: "{{ lookup('env', 'ARTIFACTS_BUCKET') }}"
+    backend_private_ip: "{{ hostvars['backend']['private_ip'] }}"
+    aws_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') }}"
+
+  tasks:
+    - name: Update and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install unzip and nginx
+      apt:
+        name:
+          - unzip
+          - nginx
+        state: present
+
+    - name: Install AWS CLI
+      unarchive:
+        src: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: "/tmp/"
+        remote_src: yes
+      args:
+        creates: "/usr/local/bin/aws"
+      register: aws_cli_install
+    - name: Run AWS CLI installer
+      command: "/tmp/aws/install -i /usr/local/aws-cli -b /usr/local/bin"
+      when: aws_cli_install is changed
+
+    - name: Install Session Manager Plugin
+      apt:
+        deb: "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb"
+        state: present
+
+    - name: Install Node.js 18
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt-get install -y nodejs npm
+      args:
+        executable: /bin/bash
+
+    - name: Create directory for frontend artifacts
+      file:
+        path: "/home/ubuntu/frontend"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Download frontend artifacts from S3
+      aws_s3:
+        bucket: "{{ artifacts_bucket }}"
+        object: "build.tar.gz"
+        dest: "/home/ubuntu/build.tar.gz"
+        mode: get
+        region: "{{ aws_region }}"
+        overwrite: yes
+
+    - name: Extract frontend application
+      unarchive:
+        src: "/home/ubuntu/build.tar.gz"
+        dest: "/home/ubuntu/frontend"
+        remote_src: yes
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Remove default Nginx web content
+      file:
+        path: "/var/www/html"
+        state: absent
+
+    - name: Copy frontend build files to Nginx web root
+      copy:
+        src: "/home/ubuntu/frontend/build/"
+        dest: "/var/www/html/"
+        owner: www-data
+        group: www-data
+        mode: '0755'
+        remote_src: yes
+
+    - name: Download Nginx configuration template from S3
+      aws_s3:
+        bucket: "{{ artifacts_bucket }}"
+        object: "nginx.conf.tpl"
+        dest: "/home/ubuntu/nginx.conf.tpl"
+        mode: get
+        region: "{{ aws_region }}"
+        overwrite: yes
+
+    - name: Replace placeholder in Nginx configuration
+      template:
+        src: "/home/ubuntu/nginx.conf.tpl"
+        dest: "/etc/nginx/sites-available/default"
+        owner: root
+        group: root
+        mode: '0644'
+      vars:
+        BACKEND_PRIVATE_IP: "{{ backend_private_ip }}"
+
+    - name: Reload Nginx to apply changes
+      service:
+        name: nginx
+        state: reloaded

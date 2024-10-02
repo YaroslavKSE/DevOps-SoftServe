@@ -1,0 +1,25 @@
+[all]
+i-09f6c5ce31daa143d ansible_host=i-09f6c5ce31daa143d ansible_connection=aws_ssm ansible_user=ssm-user private_ip=10.0.2.144
+i-0332445f3b868c6cb ansible_host=i-0332445f3b868c6cb ansible_connection=aws_ssm ansible_user=ssm-user private_ip=10.0.1.39
+i-06fa0c80465c1b802 ansible_host=i-06fa0c80465c1b802 ansible_connection=aws_ssm ansible_user=ssm-user private_ip=10.0.2.153
+i-0deb62224ebf6ebf6 ansible_host=i-0deb62224ebf6ebf6 ansible_connection=aws_ssm ansible_user=ssm-user private_ip=10.0.2.98
+i-0006d6591379c1f89 ansible_host=i-0006d6591379c1f89 ansible_connection=aws_ssm ansible_user=ssm-user private_ip=10.0.2.235
+
+[frontend]
+i-0332445f3b868c6cb
+
+[backend]
+i-09f6c5ce31daa143d
+
+[postgres]
+i-0deb62224ebf6ebf6
+
+[mongodb]
+i-06fa0c80465c1b802
+
+[redis]
+i-0006d6591379c1f89
+
+[all:vars]
+ansible_aws_ssm_transfer_method=streaming
+ansible_python_interpreter=/usr/bin/python3

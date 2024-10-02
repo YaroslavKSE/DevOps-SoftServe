@@ -1,0 +1,47 @@
+{
+  "frontend_public_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "13.53.124.233"
+  },
+  "instance_ids_map": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "backend": "string",
+        "frontend": "string",
+        "mongodb": "string",
+        "postgres": "string",
+        "redis": "string"
+      }
+    ],
+    "value": {
+      "backend": "i-09f6c5ce31daa143d",
+      "frontend": "i-0332445f3b868c6cb",
+      "mongodb": "i-06fa0c80465c1b802",
+      "postgres": "i-0deb62224ebf6ebf6",
+      "redis": "i-0006d6591379c1f89"
+    }
+  },
+  "private_ips_map": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "backend": "string",
+        "frontend": "string",
+        "mongodb": "string",
+        "postgres": "string",
+        "redis": "string"
+      }
+    ],
+    "value": {
+      "backend": "10.0.2.144",
+      "frontend": "10.0.1.39",
+      "mongodb": "10.0.2.153",
+      "postgres": "10.0.2.98",
+      "redis": "10.0.2.235"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+backend 10.0.2.144
+frontend 10.0.1.39
+mongodb 10.0.2.153
+postgres 10.0.2.98
+redis 10.0.2.235
