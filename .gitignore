@@ -175,3 +175,6 @@ cython_debug/
 # Public and private keys
 *.pub
 *_rsa
+
+# Python env
+*_env/

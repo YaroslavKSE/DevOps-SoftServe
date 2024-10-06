@@ -15,6 +15,8 @@ resource "aws_instance" "postgres" {
   tags = {
     Name = "postgres_instance"
   }
+
+  depends_on = [aws_nat_gateway.nat]
 }
 
 # MongoDB EC2 Instance
@@ -31,6 +33,8 @@ resource "aws_instance" "mongodb" {
   tags = {
     Name = "mongodb_instance"
   }
+
+  depends_on = [aws_nat_gateway.nat]
 }
 
 # Redis EC2 Instance
@@ -47,6 +51,8 @@ resource "aws_instance" "redis" {
   tags = {
     Name = "redis_instance"
   }
+
+  depends_on = [aws_nat_gateway.nat]
 }
 
 
@@ -68,12 +74,14 @@ resource "aws_instance" "frontend" {
   tags = {
     Name = "frontend_instance"
   }
+
+  depends_on = [aws_instance.backend]
 }
 
 # Backend EC2 Instance
 resource "aws_instance" "backend" {
   ami                    = var.ami_id != "" ? var.ami_id : data.aws_ami.default.id
-  instance_type          = var.instance_type
+  instance_type          = "t3.medium"
   subnet_id              = aws_subnet.private.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
   key_name               = var.key_pair_name
@@ -89,4 +97,6 @@ resource "aws_instance" "backend" {
   tags = {
     Name = "backend_instance"
   }
+
+  depends_on = [aws_instance.postgres, aws_instance.mongodb, aws_instance.redis]
 }

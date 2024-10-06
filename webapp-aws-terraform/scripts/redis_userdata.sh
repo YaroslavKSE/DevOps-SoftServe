@@ -31,4 +31,4 @@ sudo sed -i "s/^bind .*/bind 0.0.0.0/g" /etc/redis/redis.conf
 sudo sed -i "s/^protected-mode yes/protected-mode no/g" /etc/redis/redis.conf
 
 # Restart Redis
-sudo systemctl status redis-server
+sudo systemctl restart redis-server

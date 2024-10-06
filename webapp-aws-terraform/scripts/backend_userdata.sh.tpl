@@ -4,7 +4,9 @@
 sudo apt update && sudo apt upgrade -y
 
 # Install Java 11
-sudo apt install -y openjdk-11-jdk
+sudo apt-get install -y openjdk-11-jdk
+
+java --version
 
 # Install unzip
 sudo apt install unzip

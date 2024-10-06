@@ -37,6 +37,9 @@ sudo rm -rf /var/www/html/*
 # Copy frontend build files to Nginx web root
 sudo cp -r frontend/build/* /var/www/html/
 
+# Create config.json with backend URL
+echo '{"REACT_APP_API_BASE_URL": "http://'${backend_private_ip}':8080"}' | sudo tee /var/www/html/config.json
+
 # Download the Nginx configuration template from S3
 aws s3 cp s3://${artifacts_bucket}/nginx.conf.tpl ./nginx.conf.tpl
 
