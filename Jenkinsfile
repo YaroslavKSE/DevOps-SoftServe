@@ -116,13 +116,23 @@ pipeline {
                         ]) {
                             def branchName = env.GIT_BRANCH.replaceFirst('^origin/', '')
                             echo "Pushing to branch: ${branchName}"
+                            
+                            // First, ensure we're on the correct branch
                             sh """
+                                git checkout ${branchName} || git checkout -b ${branchName}
                                 git config user.email "\${JENKINS_EMAIL}"
                                 git config user.name "Jenkins"
-                                git add ${env.BACKEND_CHANGED ? env.BACKEND_VERSION_FILE : ''} ${env.FRONTEND_CHANGED ? env.FRONTEND_VERSION_FILE : ''}
-                                git commit -m "Update versions: ${commitMessage.join(', ')}"
-                                echo "Pushing to branch: ${env.GIT_BRANCH}"
-                                git push https://x-access-token:${GITHUB_TOKEN}@github.com/YaroslavKSE/DevOps-SoftServe.git HEAD:${branchName} || (echo "Push failed" && exit 1)
+                            """
+                            
+                            // Add and commit changes if any
+                            sh """
+                                if git status --porcelain | grep .; then
+                                    git add ${env.BACKEND_CHANGED ? env.BACKEND_VERSION_FILE : ''} ${env.FRONTEND_CHANGED ? env.FRONTEND_VERSION_FILE : ''}
+                                    git commit -m "Update versions: ${commitMessage.join(', ')}"
+                                    git push 'https://${GITHUB_TOKEN}@github.com/YaroslavKSE/DevOps-SoftServe.git' HEAD:${branchName}
+                                else
+                                    echo "No changes to commit"
+                                fi
                             """
                         }
                         echo "Pushed version updates: ${commitMessage.join(', ')}"
