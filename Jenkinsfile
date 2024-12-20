@@ -18,6 +18,7 @@ pipeline {
         FRONTEND_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/schedule-web-app-frontend"
         BACKEND_VERSION_FILE = 'internship_project/src/version.txt'
         FRONTEND_VERSION_FILE = 'internship_project/frontend/version.txt'
+        EMAIL_RECIPIENT = credentials('EMAIL_RECIPIENT')
     }
 
     stages {
@@ -164,22 +165,84 @@ pipeline {
                 }
             }
         }
-        stage('Trigger CD Pipeline') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' || env.FRONTEND_CHANGED == 'true' }
-            }
-            steps {
-                build job: 'CD-Pipeline', 
-                      parameters: [
-                          string(name: 'BACKEND_VERSION', value: env.NEW_BACKEND_VERSION),
-                          string(name: 'FRONTEND_VERSION', value: env.NEW_FRONTEND_VERSION)
-                      ],
-                      wait: false
+        // stage('Trigger CD Pipeline') {
+        //     when {
+        //         expression { env.BACKEND_CHANGED == 'true' || env.FRONTEND_CHANGED == 'true' }
+        //     }
+        //     steps {
+        //         build job: 'CD-Pipeline', 
+        //               parameters: [
+        //                   string(name: 'BACKEND_VERSION', value: env.NEW_BACKEND_VERSION),
+        //                   string(name: 'FRONTEND_VERSION', value: env.NEW_FRONTEND_VERSION)
+        //               ],
+        //               wait: false
+        //     }
+        // }
+    }
+    post {
+        success {
+            script {
+                def componentChanges = []
+                if (env.BACKEND_CHANGED == 'true') {
+                    componentChanges.add("Backend (${env.NEW_BACKEND_VERSION})")
+                }
+                if (env.FRONTEND_CHANGED == 'true') {
+                    componentChanges.add("Frontend (${env.NEW_FRONTEND_VERSION})")
+                }
+                
+                def changesMessage = componentChanges.isEmpty() ? 
+                    "No components were changed in this build." : 
+                    "Changed components: ${componentChanges.join(', ')}"
+
+                emailext (
+                    subject: "CI Pipeline Successful: ${currentBuild.fullDisplayName}",
+                    body: """
+                        Build Status: SUCCESS
+                        Job: ${env.JOB_NAME}
+                        Build Number: ${env.BUILD_NUMBER}
+                        Build URL: ${env.BUILD_URL}
+                        
+                        ${changesMessage}
+                        
+                        Changes Details:
+                        - Backend Changes: ${env.BACKEND_CHANGED == 'true' ? 'Yes' : 'No'}
+                        - Frontend Changes: ${env.FRONTEND_CHANGED == 'true' ? 'Yes' : 'No'}
+                        
+                        Versions:
+                        - Backend Version: ${env.NEW_BACKEND_VERSION ?: 'unchanged'}
+                        - Frontend Version: ${env.NEW_FRONTEND_VERSION ?: 'unchanged'}
+                        
+                        CD Pipeline Status: ${env.BACKEND_CHANGED == 'true' || env.FRONTEND_CHANGED == 'true' ? 'Triggered' : 'Not Triggered (no changes)'}
+                        
+                        Duration: ${currentBuild.durationString}
+                    """.stripIndent(),
+                    to: env.EMAIL_RECIPIENT,
+                    mimeType: 'text/plain'
+                )
             }
         }
-    }
-
-    post {
+        
+        failure {
+            emailext (
+                subject: "CI Pipeline Failed: ${currentBuild.fullDisplayName}",
+                body: """
+                    Build Status: FAILURE
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Build URL: ${env.BUILD_URL}
+                    
+                    The pipeline failed. Please check the build logs for details.
+                    
+                    Last Executed Stage: ${currentBuild.displayName}
+                    Error Message: ${currentBuild.description ?: 'No error description available'}
+                    
+                    Duration: ${currentBuild.durationString}
+                """.stripIndent(),
+                to: env.EMAIL_RECIPIENT,
+                mimeType: 'text/plain'
+            )
+        }
+        
         always {
             dir('internship_project') {
                 sh 'docker compose down'
@@ -187,5 +250,4 @@ pipeline {
             }
         }
     }
-
 }
